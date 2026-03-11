@@ -1,0 +1,455 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Commerce Store</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#f5f5f5;
+scroll-behavior:smooth;
+}
+
+/* NAVBAR */
+
+nav{
+background:#131921;
+color:white;
+padding:15px 20px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+position:sticky;
+top:0;
+z-index:1000;
+}
+
+.logo{
+font-size:20px;
+font-weight:bold;
+}
+
+.nav-links{
+display:flex;
+gap:20px;
+}
+
+.nav-links a{
+color:white;
+text-decoration:none;
+}
+
+.menu{
+display:none;
+font-size:22px;
+cursor:pointer;
+}
+
+/* MOBILE NAV */
+
+@media(max-width:768px){
+
+.nav-links{
+display:none;
+flex-direction:column;
+background:#131921;
+position:absolute;
+top:60px;
+left:0;
+width:100%;
+padding:20px;
+}
+
+.nav-links.show{
+display:flex;
+}
+
+.menu{
+display:block;
+}
+
+}
+
+/* FILTER BAR */
+
+.controls{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+padding:20px;
+justify-content:center;
+background:white;
+}
+
+.controls input,
+.controls select{
+padding:10px;
+border-radius:5px;
+border:1px solid #ccc;
+}
+
+/* PRODUCT GRID */
+
+.products{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:20px;
+padding:20px;
+}
+
+.product{
+background:white;
+padding:15px;
+border-radius:8px;
+box-shadow:0 2px 6px rgba(0,0,0,0.1);
+text-align:center;
+}
+
+.product img{
+width:100%;
+height:150px;
+object-fit:cover;
+border-radius:6px;
+}
+
+.rating{
+color:gold;
+margin:5px 0;
+}
+
+button{
+padding:8px 12px;
+border:none;
+cursor:pointer;
+border-radius:5px;
+margin:5px;
+}
+
+.cart-btn{
+background:#ffa41c;
+}
+
+/* CART SIDEBAR */
+
+.cart-sidebar{
+position:fixed;
+right:-350px;
+top:70px;
+width:350px;
+height:90%;
+background:white;
+box-shadow:-2px 0 10px rgba(0,0,0,0.2);
+padding:20px;
+transition:0.3s;
+overflow:auto;
+}
+
+.cart-sidebar.active{
+right:0;
+}
+
+.cart-item{
+border-bottom:1px solid #ddd;
+padding:10px 0;
+}
+
+.checkout{
+background:#28a745;
+color:white;
+width:100%;
+margin-top:15px;
+}
+
+/* FLOATING CART BUTTON */
+
+.cart-open-btn{
+position:fixed;
+right:20px;
+bottom:20px;
+background:#ff9900;
+color:white;
+border-radius:50%;
+width:60px;
+height:60px;
+font-size:26px;
+display:flex;
+align-items:center;
+justify-content:center;
+cursor:pointer;
+}
+
+/* CLOSE CART */
+
+.close-cart{
+cursor:pointer;
+font-size:22px;
+margin-bottom:10px;
+}
+
+</style>
+</head>
+
+<body id="home">
+
+<!-- NAVBAR -->
+
+<nav>
+
+<div class="logo">MyStore</div>
+
+<div class="menu" onclick="toggleMenu()">☰</div>
+
+<div class="nav-links" id="navLinks">
+<a href="#home">Home</a>
+<a href="#productList">Products</a>
+</div>
+
+</nav>
+
+<!-- FILTER CONTROLS -->
+
+<div class="controls">
+
+<input type="text" id="search" placeholder="Search products">
+
+<select id="categoryFilter">
+<option value="all">All Categories</option>
+<option value="electronics">Electronics</option>
+<option value="fashion">Fashion</option>
+<option value="books">Books</option>
+</select>
+
+<select id="sortPrice">
+<option value="default">Sort by price</option>
+<option value="low">Low → High</option>
+<option value="high">High → Low</option>
+</select>
+
+</div>
+
+<!-- PRODUCT LIST -->
+
+<section id="productList" class="products"></section>
+
+<!-- CART BUTTON -->
+
+<div class="cart-open-btn" onclick="toggleCart()">🛒</div>
+
+<!-- CART SIDEBAR -->
+
+<div class="cart-sidebar" id="cartSidebar">
+
+<div class="close-cart" onclick="toggleCart()">← Close</div>
+
+<h2>Cart</h2>
+
+<div id="cartItems"></div>
+
+<button class="checkout" onclick="checkout()">Checkout</button>
+
+</div>
+
+<script>
+
+/* PRODUCTS */
+
+const products=[
+
+{
+name:"Laptop",
+category:"electronics",
+price:800,
+rating:5,
+image:"https://images.unsplash.com/photo-1517336714731-489689fd1ca8"
+},
+
+{
+name:"Headphones",
+category:"electronics",
+price:120,
+rating:4,
+image:"https://images.unsplash.com/photo-1518441902110-2f1b3c9a6c35"
+},
+
+{
+name:"T-Shirt",
+category:"fashion",
+price:25,
+rating:4,
+image:"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab"
+},
+
+{
+name:"Jeans",
+category:"fashion",
+price:50,
+rating:5,
+image:"https://images.unsplash.com/photo-1541099649105-f69ad21f3246"
+},
+
+{
+name:"JavaScript Book",
+category:"books",
+price:20,
+rating:5,
+image:"https://images.unsplash.com/photo-1512820790803-83ca734da794"
+}
+
+]
+
+let cart=[]
+
+/* DISPLAY PRODUCTS */
+
+function displayProducts(data){
+
+const list=document.getElementById("productList")
+list.innerHTML=""
+
+if(data.length===0){
+list.innerHTML="<h2 style='text-align:center'>Product Not Found</h2>"
+return
+}
+
+data.forEach(product=>{
+
+let stars=""
+
+for(let i=0;i<product.rating;i++){
+stars+="⭐"
+}
+
+list.innerHTML+=`
+
+<div class="product">
+
+<img src="${product.image}">
+
+<h3>${product.name}</h3>
+
+<div class="rating">${stars}</div>
+
+<p>$${product.price}</p>
+
+<button class="cart-btn"
+onclick="addToCart('${product.name}',${product.price})">
+Add to Cart
+</button>
+
+</div>
+
+`
+
+})
+
+}
+
+displayProducts(products)
+
+/* CART */
+
+function addToCart(name,price){
+
+cart.push({name,price})
+updateCart()
+
+}
+
+function updateCart(){
+
+const cartDiv=document.getElementById("cartItems")
+
+cartDiv.innerHTML=""
+
+cart.forEach(item=>{
+cartDiv.innerHTML+=`<div class="cart-item">${item.name} - $${item.price}</div>`
+})
+
+}
+
+function toggleCart(){
+document.getElementById("cartSidebar").classList.toggle("active")
+}
+
+/* CHECKOUT */
+
+function checkout(){
+
+if(cart.length===0){
+alert("Cart is empty")
+return
+}
+
+alert("Order placed successfully!")
+
+cart=[]
+updateCart()
+
+}
+
+/* SEARCH */
+
+document.getElementById("search").addEventListener("keyup",function(){
+
+let value=this.value.toLowerCase()
+
+let filtered=products.filter(p =>
+p.name.toLowerCase().includes(value)
+)
+
+displayProducts(filtered)
+
+})
+
+/* FILTER */
+
+document.getElementById("categoryFilter").addEventListener("change",function(){
+
+let value=this.value
+
+if(value==="all"){
+displayProducts(products)
+return
+}
+
+let filtered=products.filter(p=>p.category===value)
+
+displayProducts(filtered)
+
+})
+
+/* SORT */
+
+document.getElementById("sortPrice").addEventListener("change",function(){
+
+let sorted=[...products]
+
+if(this.value==="low"){
+sorted.sort((a,b)=>a.price-b.price)
+}
+
+if(this.value==="high"){
+sorted.sort((a,b)=>b.price-a.price)
+}
+
+displayProducts(sorted)
+
+})
+
+/* MOBILE MENU */
+
+function toggleMenu(){
+document.getElementById("navLinks").classList.toggle("show")
+}
+
+</script>
+
+</body>
+</html>
+```
+
